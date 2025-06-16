@@ -1,88 +1,79 @@
-# 🧠 CPU Architecture Detection & Boot Flow (Stage-based Design)
+## 🧠 CPU Architecture Detection & Boot Flow (Stage-based Design)
 
-## 🔍 Overview
+### 🔍 Logic Diagram
 
-Bootloader ของระบบนี้มีโครงสร้างแบบ 3-stage เพื่อรองรับหลายสถาปัตยกรรมทั้ง x86, x86_64 และ ARM โดยมีการตรวจสอบ CPUID เพื่อแยก flow ของการบูตอย่างเหมาะสมกับ CPU ที่ตรวจพบ
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        Stage 1 Bootloader (Real Mode @ 0x7C00)                         │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ - ตรวจสอบว่า CPU รองรับ CPUID instruction หรือไม่                                     │
+│   ├── [Yes] → เรียกใช้งาน CPUID function                                              │
+│   │     ├── ตรวจสอบ CPU Architecture (32-bit หรือ 64-bit)                              │
+│   │     │     ├── [Long Mode Available] → โหลดและเริ่ม Stage 3 (x86_64)               │
+│   │     │     └── [No Long Mode] → โหลดและเริ่ม Kernel 32-bit (x86)                   │
+│   │     └── (สามารถเพิ่มการตรวจสอบ feature อื่น ๆ เช่น virtualization, SSE, etc.)   │
+│   └── [No] → สมมุติว่าเป็น non-x86 → โหลด ARM Kernel (AArch32 หรือ AArch64)          │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 
----
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        Stage 2 Bootloader (Real Mode @ 0x8000)                         │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ - ตั้งค่า Segment Register, Stack และ Clear หน้าจอ                                    │
+│ - อ่านค่า cpu_mode ที่ Stage 1 ส่งมาไว้ที่ [0x7FF0]                                   │
+│   ├── 1 → รองรับ Long Mode (x86_64)                                                    │
+│   ├── 2 → รองรับ Protected Mode เท่านั้น (x86 32-bit)                                 │
+│   └── อื่นๆ → Unsupported Architecture (อาจเป็น ARM)                                  │
+│                                                                                        │
+│ - ตรวจสอบ cpu_mode                                                                    │
+│   ├── [1] เตรียมโหมด 64-bit                                                            │
+│   │   ├── แสดงข้อความเตรียมเข้า 64-bit                                                │
+│   │   ├── โหลด Stage 3 จาก LBA sector 32 → 0x90000                                     │
+│   │   ├── เปิด A20 Line                                                                 │
+│   │   └── Jump ไป Stage 3 ที่ 0x0000:0x9000                                             │
+│   ├── [2] เตรียมโหมด Protected Mode (32-bit)                                          │
+│   │   ├── แสดงข้อความเตรียมเข้า 32-bit                                                │
+│   │   ├── โหลด Kernel จาก LBA sector 8 → 0x10000                                       │
+│   │   ├── เปิด A20 Line                                                                 │
+│   │   └── Jump ไป setup_protected_mode                                                 │
+│   │         ├── Load GDT                                                               │
+│   │         ├── เปิด CR0 PE-bit                                                        │
+│   │         └── Far jump เข้า protected_mode_entry                                     │
+│   └── อื่น ๆ → แสดงข้อความ "Unsupported Architecture" และ Halt                      │
+│                                                                                        │
+│ 💡 หมายเหตุ:                                                                            │
+│   - ใช้ BIOS INT 10h สำหรับข้อความ                                                     │
+│   - ใช้ Fast A20 (Port 0x92) เพื่อเปิด A20 Line                                        │
+│   - ใช้ GDT ขนาดเล็กสำหรับ Protected Mode                                             │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 
-## 🪜 Boot Flow Summary
-
-### Stage 1: Initial Bootloader (`@ 0x7C00`)
-
-- ตรวจสอบว่า CPU รองรับ `CPUID` หรือไม่
-  - ❌ ไม่รองรับ → ถือว่าเป็น ARM → Jump ไป `0xA000`
-  - ✅ รองรับ → ตรวจสอบ Long Mode:
-    - ✅ รองรับ Long Mode → `cpu_mode = 1 (x86_64)` → โหลด Stage 3 ที่ `0x90000` → `jmp 0x9000`
-    - ❌ ไม่รองรับ → `cpu_mode = 2 (x86)` → โหลด Stage 2 ที่ `0x8000` → `jmp 0x8000`
-
----
-
-### Stage 2: Protected Mode Setup (`@ 0x8000`)
-
-- อ่าน `cpu_mode` จาก `0x7FF0`
-- กรณี:
-  - `1` → เตรียมเข้า 64-bit Mode:
-    - โหลด Stage 3 (`0x90000`) จาก LBA sector 32
-    - เปิด A20 Line → Jump ไป `0x9000`
-  - `2` → เตรียม Protected Mode (x86 32-bit):
-    - โหลด Kernel จาก LBA sector 8 → `0x10000`
-    - ตั้ง GDT, เปิด CR0 → Jump ไป `protected_mode_entry`
-  - อื่นๆ → แสดง "Unsupported Architecture" → Halt
-
----
-
-### Stage 3: Long Mode Setup (`@ 0x9000`)
-
-- ตรวจสอบ A20 Line → เปิดหากยังไม่เปิด
-- โหลด Kernel (ใช้ LBA หรือ fallback เป็น CHS)
-- สร้าง Paging Structures (PML4, PDPT, PD)
-- เปิด Long Mode:
-  - `CR4.PAE = 1`
-  - `EFER.LME = 1`
-  - `CR0 |= PG | PE`
-- Jump ไป `0x100000` → เข้าสู่ 64-bit Kernel
-
----
-
-## 🔧 Detailed Boot Decision Table
-
-| Stage | ที่อยู่   | จุดทำงานหลัก                                                      |
-|-------|----------|---------------------------------------------------------------------|
-| 1     | 0x7C00   | ตรวจ CPUID → ตัดสินใจเข้า Stage 2 หรือ Stage 3 หรือ ARM             |
-| 2     | 0x8000   | เตรียม Protected Mode หรือ Long Mode และโหลด Kernel ที่เหมาะสม       |
-| 3     | 0x9000   | ตั้งค่า Paging + GDT → เข้าสู่ Long Mode (64-bit) และเริ่ม Kernel     |
-
----
-
-## 📝 หมายเหตุ
-
-- ใช้ `INT 13h AH=42h` สำหรับอ่าน Disk แบบ LBA (fallback เป็น CHS)
-- เปิด A20 Line ด้วย Fast A20 (`port 0x92`)
-- ใช้ BIOS `INT 10h` สำหรับแสดงข้อความ
-- GDT ถูกจัดเตรียมให้เล็กและเหมาะกับโหมดที่เปลี่ยน (PM/LM)
-
----
-
-## 🔗 สถาปัตยกรรมที่รองรับ
-
-- ✅ x86 (Real Mode → Protected Mode)
-- ✅ x86_64 (Real Mode → Protected Mode → Long Mode)
-- 🧪 ARM / AArch64 (อยู่ในแผนรองรับ โดยใช้ fallback หาก CPUID ไม่มี)
-
----
-
-## 📌 ภาพรวม Flow สั้น
-
-```plaintext
-Stage 1 (0x7C00)
- ├── ถ้า CPUID ไม่มี → ARM → jmp 0xA000
- └── ถ้า CPUID มี
-      ├── ถ้ามี Long Mode → cpu_mode=1 → Stage 3 @ 0x90000
-      └── ถ้าไม่มี Long Mode → cpu_mode=2 → Stage 2 @ 0x8000
-
-Stage 2 (0x8000) ← x86 (32-bit)
- └── เตรียม GDT → เปิด PE → โหลด Kernel @ 0x100000 → jmp EIP=0x100000
-
-Stage 3 (0x9000) ← x86_64
- └── สร้าง PML4 → เปิด CR4.PAE, CR0.PG, EFER.LME → jmp RIP=0x100000
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        Stage 3 Bootloader (Real Mode @ 0x9000)                         │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ - เคลียร์ Segment Registers และ Stack Pointer                                          │
+│ - แสดงข้อความ "Stage 3 - 64-bit Kernel Loader" ผ่าน BIOS INT 10h                     │
+│ - ตรวจสอบว่า A20 line เปิดใช้งานหรือยัง                                               │
+│   ├── [Enabled] → ดำเนินการต่อ                                                        │
+│   └── [Disabled] → พยายามเปิด A20, หากล้มเหลว → แสดง "A20 Error" และ halt          │
+│                                                                                        │
+│ - โหลด kernel โดยใช้ BIOS LBA หรือ fallback เป็น CHS                                  │
+│   ├── [LBA Available] → โหลด kernel_x64 จาก sector 6 เป็นต้นไป                        │
+│   └── [CHS Fallback] → โหลด kernel จากตำแหน่ง CHS ที่กำหนด                            │
+│       ├── [Success] → ไปต่อ                                                            │
+│       └── [Fail] → แสดง “Disk read error!” และ halt                                  │
+│                                                                                        │
+│ - เตรียม Memory Paging สำหรับ Long Mode                                               │
+│   ├── Clear page table memory ที่ 0x1000, 0x2000, 0x3000                                │
+│   ├── สร้าง PML4, PDPT, PD สำหรับ map 0x00000000–0x00200000 ด้วย 2MB page             │
+│   ├── เปิด PAE (CR4.PAE = 1)                                                           │
+│   └── เปิด Long Mode ผ่าน MSR EFER (bit LME)                                          │
+│                                                                                        │
+│ - สร้าง GDT ใหม่, เปิด Protected Mode + Paging (CR0 |= PG|PE)                          │
+│ - Far Jump ไปยัง long_mode_start เพื่อเข้าสู่ 64-bit mode                              │
+│                                                                                        │
+│ [64-bit Mode]                                                                          │
+│   ├── Set segment registers (DS, SS = 0)                                               │
+│   ├── เคลียร์หน้าจอ, แสดง “Entering 64-bit mode...”                                    │
+│   ├── Copy kernel (โหลดไว้ที่ 0x10000) ไปยัง 0x100000                                   │
+│   └── Jump ไปยัง entry point ที่ 0x100000                                              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
