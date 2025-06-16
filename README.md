@@ -1,8 +1,4 @@
-# VernisOS
-I'm trying to develop an operating system to study and try to make the system faster and more stable.
-
-# Modular OS with AI Core (AI-powered Microkernel OS)
-
+# VernisOS (Modular OS with AI Core)
 ## แนวความคิดในการพัฒนา
 
 ระบบปฏิบัติการที่พัฒนาขึ้นนี้มีจุดมุ่งหมายเพื่อสร้าง **ระบบปฏิบัติการที่ยืดหยุ่นและรวดเร็ว** โดยการใช้ **สถาปัตยกรรม Microkernel** ซึ่งแบ่งออกเป็นหลายส่วนที่ทำงานแยกกันอย่างอิสระ เช่น Bootloader, Kernel, Modules, และ User Environment ซึ่งทั้งหมดสามารถใช้งานร่วมกันได้แบบ **modular** นอกจากนี้ ระบบยังสามารถติดตั้ง **AI Engine** ที่ฝังลงไปใน **Core System** เพื่อช่วยในการตรวจสอบ, ปรับแต่งระบบ, และช่วยวิเคราะห์ข้อมูลต่าง ๆ เช่น crash log และ process anomalies โดยจะไม่มี GUI ให้ใช้งาน แต่จะใช้ **CLI/Terminal** ในการติดต่อกับ AI ผ่านคำสั่งที่จำกัดตามสิทธิ์การเข้าถึง
