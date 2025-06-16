@@ -37,7 +37,6 @@ I'm trying to develop an operating system to study and try to make the system fa
 | **15**    | สัปดาห์ 39–42   | Optimize kernel, module และ sandbox         | Rust, C                            | ปรับประสิทธิภาพ memory, context switch, load balancing
 | **16**    | สัปดาห์ 43–45   | Integration Test & Logging System           | C, Python                          | เชื่อมทุกส่วนเข้าด้วยกัน และสร้างระบบ debug log
 | **17**    | สัปดาห์ 46–48   | Prepare Developer Preview                   | Makefile, Doc tools                | ทำ doc, สร้าง build script, prepare dev release
-|-----------|---------------|---------------------------------------------|------------------------------------|--------------------------------------------------------------------
 
 ## แนวทางการพัฒนา
 
