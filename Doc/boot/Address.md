@@ -22,7 +22,7 @@
 | 0x7C7B          | ...   | `no_cpuid:`                | Old Path                       | ถ้าไม่รองรับ CPUID ให้ถือว่าเป็น CPU old → แสดงข้อความ                    
 | 0x7C90+         | ...   | `disk_error:`              | Error Handler                  | กรณีโหลด Stage 2 ไม่สำเร็จ → แสดงข้อความ “Disk read error!” และหยุดการทำงาน            
 | 0x7D00+         | ...   | `print_message`            | ฟังก์ชัน BIOS Text Output         | ใช้ INT 0x10 (AH=0Eh) แสดงข้อความในโหมด TTY                                            
-| 0x7E00+         | <32   | `cpu_mode db`              | ข้อมูล CPU mode                  | ค่า 0=ARM, 1=x86_64, 2=x86                                                               
+| 0x7E00+         | <32   | `cpu_mode db`              | ข้อมูล CPU mode                  | ค่า 0=Old, 1=x86_64, 2=x86                                                               
 | 0x7E20+         | ~150  | `db`                       | ข้อความข้อความต่าง ๆ              | เช่น ‘CPUID supported’, ‘Stage 2 loaded’, ‘Disk read error!’                             
 | 0x7FFE          | 2     | `dw 0xAA55`                | Boot Signature                 | MBR Signature ที่ BIOS ต้องการเพื่อบูต (อยู่ตำแหน่งท้ายสุดที่ offset 510–511)            
 | 0x8000          | 1     | FA                         | cli                            | Disable interrupts                 
