@@ -6,13 +6,13 @@
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                        Stage 1 Bootloader (Real Mode @ 0x7C00)                         │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
- - ตรวจสอบว่า CPU รองรับ CPUID instruction หรือไม่                                          
-   ├── [Yes] → เรียกใช้งาน CPUID function                                                 
-   │     ├── ตรวจสอบ CPU Architecture (32-bit หรือ 64-bit)                               
-   │     │     ├── [Long Mode Available] → โหลดและเริ่ม Stage 3 (x86_64)                  
-   │     │     └── [No Long Mode] → โหลดและเริ่ม Kernel 32-bit (x86)                      
-   │     └── (สามารถเพิ่มการตรวจสอบ feature อื่น ๆ เช่น virtualization, SSE, etc.)            
-   └── [No] → สมมุติว่าเป็น non-x86 → โหลด ARM Kernel (AArch32 หรือ AArch64)                  
+ ตรวจสอบว่า CPU รองรับ CPUID instruction หรือไม่                                            
+ ├── [Yes] → เรียกใช้งาน CPUID function                                                   
+ │     ├── ตรวจสอบ CPU Architecture (32-bit หรือ 64-bit)                                 
+ │     │     ├── [Long Mode Available] → โหลดและเริ่ม Stage 3 (x86_64)                    
+ │     │     └── [No Long Mode]        → โหลดและเริ่ม Kernel 32-bit (x86)                 
+ │     └── (สามารถเพิ่มการตรวจสอบ feature อื่น ๆ เช่น virtualization, SSE, etc.)             
+ └── [No] → สมมุติว่าเป็น non-x86 architecture → โหลด ARM Kernel (AArch32 หรือ AArch64)      
 
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                        Stage 2 Bootloader (Real Mode @ 0x8000)                         │
