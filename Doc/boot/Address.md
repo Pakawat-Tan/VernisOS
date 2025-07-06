@@ -19,7 +19,7 @@
 | 0x7C71          | 2     | `call`                     | `print_message`                | เรียกฟังก์ชันแสดงข้อความ                                                                 
 | 0x7C73          | 3     | `mov`                      | `al ← cpu_mode`                | โหลดโหมด CPU ที่ตรวจสอบได้ไว้ที่ 0x7FF0                                                  
 | 0x7C76          | 5     | `jmp`                      | `0x0000:0x8000`                | กระโดดไปยัง Stage 2 ที่โหลดไว้ที่ 0x8000                                                  
-| 0x7C7B          | ...   | `no_cpuid:`                | ARM Path                       | ถ้าไม่รองรับ CPUID ให้ถือว่าเป็น ARM → แสดงข้อความ และหยุดการทำงาน                       
+| 0x7C7B          | ...   | `no_cpuid:`                | Old Path                       | ถ้าไม่รองรับ CPUID ให้ถือว่าเป็น CPU old → แสดงข้อความ                    
 | 0x7C90+         | ...   | `disk_error:`              | Error Handler                  | กรณีโหลด Stage 2 ไม่สำเร็จ → แสดงข้อความ “Disk read error!” และหยุดการทำงาน            
 | 0x7D00+         | ...   | `print_message`            | ฟังก์ชัน BIOS Text Output         | ใช้ INT 0x10 (AH=0Eh) แสดงข้อความในโหมด TTY                                            
 | 0x7E00+         | <32   | `cpu_mode db`              | ข้อมูล CPU mode                  | ค่า 0=ARM, 1=x86_64, 2=x86                                                               
