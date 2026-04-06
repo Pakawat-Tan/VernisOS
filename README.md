@@ -1,38 +1,39 @@
-# VernisOS (Modular OS with AI Core)
+# VernisOS (ระบบปฏิบัติการแบบ Modular พร้อม AI Core)
 
-> **Version 0.1.0-dev** — A bare-metal Microkernel OS with an in-kernel Rust AI engine.  
-> Supports x86 and x86_64 from a single disk image.
+> **เวอร์ชัน 0.1.0-dev** — ระบบปฏิบัติการแบบ Microkernel ที่ทำงานบน bare-metal พร้อม AI engine ภายใน kernel ที่พัฒนาด้วย Rust  
+> รองรับทั้ง x86 และ x86_64 จาก disk image เดียว
 
-## Quick Start
+## 🚀 เริ่มต้นใช้งาน (Quick Start)
 
 ```bash
-make prerequisites    # Check toolchain
-make                  # Build everything
-make run64            # Run in QEMU (x64)
+make prerequisites    # ตรวจสอบเครื่องมือที่จำเป็น (toolchain)
+make                  # สร้าง (build) ทั้งระบบ
+make run64            # รันบน QEMU (โหมด 64-bit)
 ```
+
+📖 คู่มือเริ่มต้นใช้งาน — ขั้นตอนการติดตั้งและใช้งานแบบละเอียด
+✨ คุณสมบัติ (Features)
+รองรับ 2 สถาปัตยกรรม: x86 (32-bit) และ x86_64 (64-bit) จาก boot image เดียว
+Bootloader 3 ขั้นตอน: ตรวจสอบ CPUID ระหว่าง runtime และเลือกสถาปัตยกรรมอัตโนมัติ
+Microkernel: มี scheduler, ระบบ IPC (queues + channels), ตัวโหลดโมดูล และ sandbox
+AI Engine ใน Kernel (Rust no_std): ตรวจจับความผิดปกติ (anomaly detection), ปรับแต่งอัตโนมัติ (auto-tuning) และให้คะแนนความน่าเชื่อถือ (trust scoring)
+ระบบ Policy: แปลงจาก YAML → binary VPOL → บังคับใช้งานใน runtime
+VernisFS: filesystem แบบเรียบง่ายระดับ sector พร้อมระบบยืนยันตัวตนผู้ใช้
+CLI จำนวน 18 คำสั่ง: ควบคุมสิทธิ์การเข้าถึงตามระดับ (root/admin/user)
+ระบบ Logging แบบมีโครงสร้าง: klog (kernel) + audit log (เหตุการณ์ด้านความปลอดภัย)
+📚 เอกสาร (Documentation)
 
 📖 **[Getting Started Guide](GETTING_STARTED.md)** — Full setup instructions
 
-## Features
-
-- **Dual-architecture**: x86 (32-bit) and x86_64 (64-bit) from one boot image
-- **3-stage bootloader**: Runtime CPUID detection, automatic arch selection
-- **Microkernel**: Scheduler, IPC (queues + channels), module loader, sandbox
-- **In-kernel AI Engine** (Rust `no_std`): anomaly detection, auto-tuning, trust scoring
-- **Policy system**: YAML → binary VPOL → runtime enforcement
-- **VernisFS**: Minimal sector-based filesystem with user authentication
-- **CLI with 18 commands**: Privilege-based access control (root/admin/user)
-- **Structured logging**: klog (kernel) + audit log (security events)
-
-## Documentation
-
-| Document | Description |
+📚 เอกสาร (Documentation)
 |----------|-------------|
-| [GETTING_STARTED.md](GETTING_STARTED.md) | Prerequisites, build, first boot |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture overview |
-| [docs/BUILD.md](docs/BUILD.md) | Build system & Makefile targets |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Development guidelines |
-| [CHANGELOG.md](CHANGELOG.md) | Version history (all phases) |
+|เอกสาร	  | คำอธิบาย     |
+|----------|-------------|
+| GETTING_STARTED.md |	วิธีติดตั้ง, การ build และการ boot ครั้งแรก |
+| docs/ARCHITECTURE.md |	ภาพรวมสถาปัตยกรรมของระบบ |
+| docs/BUILD.md |	ระบบ build และคำสั่งใน Makefile |
+| CONTRIBUTING.md |	แนวทางการพัฒนาและการมีส่วนร่วม |
+| CHANGELOG.md |	ประวัติการเปลี่ยนแปลงของเวอร์ชัน |
 
 ## แนวความคิดในการพัฒนา
 
