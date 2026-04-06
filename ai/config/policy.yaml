@@ -1,0 +1,171 @@
+# VernisOS Policy Configuration (Phase 12)
+#
+# Master policy file — compiled to binary blob and embedded in os.img.
+# Also hot-reloadable via COM2 CMD|POLICY frame at runtime.
+#
+# Severity levels: LOW, MEDIUM, HIGH, CRITICAL
+# All window/cooldown values in seconds (compiler converts to ticks).
+
+version: 1
+
+# =============================================================================
+# Anomaly Detection: Rate Rules
+# Trigger when event_type count exceeds max_count within window.
+# =============================================================================
+rate_rules:
+  - event_type: EXCP
+    max_count: 5
+    window_sec: 10.0
+    severity: HIGH
+
+  - event_type: PROC
+    max_count: 20
+    window_sec: 5.0
+    severity: MEDIUM
+
+  - event_type: DENY
+    max_count: 10
+    window_sec: 5.0
+    severity: MEDIUM
+
+  - event_type: FAIL
+    max_count: 5
+    window_sec: 10.0
+    severity: HIGH
+
+  - event_type: MOD
+    max_count: 8
+    window_sec: 10.0
+    severity: MEDIUM
+
+# =============================================================================
+# Anomaly Detection: Pattern Rules
+# Trigger when event sequence matches within window.
+# =============================================================================
+pattern_rules:
+  - name: exception-storm
+    sequence: [EXCP, EXCP, EXCP]
+    window_sec: 3.0
+    severity: CRITICAL
+
+  - name: bad-module
+    sequence: [MOD, EXCP]
+    window_sec: 2.0
+    severity: HIGH
+
+  - name: denial-cascade
+    sequence: [DENY, DENY, DENY, DENY]
+    window_sec: 3.0
+    severity: HIGH
+
+  - name: fork-bomb
+    sequence: [PROC, PROC, PROC, PROC, PROC]
+    window_sec: 2.0
+    severity: CRITICAL
+
+# =============================================================================
+# Anomaly Detection: Threshold Rules
+# Trigger when metric exceeds max_val.
+# =============================================================================
+threshold_rules:
+  - metric: process_count
+    max_val: 32
+    severity: MEDIUM
+
+  - metric: process_count
+    max_val: 64
+    severity: CRITICAL
+
+  - metric: ipc_queue_len
+    max_val: 100
+    severity: MEDIUM
+
+  - metric: exception_rate
+    max_val: 5.0
+    severity: HIGH
+
+# =============================================================================
+# Auto-Tuner Configuration
+# =============================================================================
+tuner:
+  high_rate: 20.0
+  critical_rate: 50.0
+  high_proc_count: 8
+  critical_proc_count: 16
+  default_quantum: 10
+  cooldown_sec: 15.0
+
+# =============================================================================
+# Remediation Rules
+# Matched top-to-bottom by severity; first match wins.
+# =============================================================================
+remediation_rules:
+  - min_severity: CRITICAL
+    action: kill
+    param: 0
+    repeat_limit: 1
+    cooldown_sec: 60.0
+
+  - min_severity: HIGH
+    action: throttle
+    param: 25
+    repeat_limit: 3
+    cooldown_sec: 30.0
+
+  - min_severity: MEDIUM
+    action: log
+    param: 0
+    repeat_limit: 10
+    cooldown_sec: 10.0
+
+  - min_severity: LOW
+    action: log
+    param: 0
+    repeat_limit: 20
+    cooldown_sec: 5.0
+
+# =============================================================================
+# Alert Deduplication
+# =============================================================================
+dedup:
+  window_sec: 30.0
+
+# =============================================================================
+# Process Trust Thresholds
+# =============================================================================
+trust:
+  failures_to_suspicious: 3
+  failures_to_untrusted: 6
+  denials_to_suspicious: 2
+  denials_to_untrusted: 5
+  anomalies_to_suspicious: 2
+  anomalies_to_untrusted: 4
+
+# =============================================================================
+# Access Policies — CLI command privilege levels
+# privilege: root (0), admin (1), user (2)
+# =============================================================================
+access_rules:
+  - pattern: "shutdown|restart|halt"
+    min_privilege: 0
+    description: "Power control — root only"
+
+  - pattern: "module load|module unload"
+    min_privilege: 0
+    description: "Module management — root only"
+
+  - pattern: "policy reload"
+    min_privilege: 0
+    description: "Policy reload — root only"
+
+  - pattern: "kill|suspend|resume"
+    min_privilege: 1
+    description: "Process control — admin+"
+
+  - pattern: "ps|sysinfo|ai status"
+    min_privilege: 2
+    description: "Status queries — all users"
+
+  - pattern: "help|clear|echo|whoami"
+    min_privilege: 2
+    description: "Basic commands — all users"

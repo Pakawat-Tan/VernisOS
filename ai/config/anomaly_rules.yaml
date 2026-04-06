@@ -1,0 +1,79 @@
+# VernisOS Anomaly Detection Rules (Phase 10)
+#
+# Loaded by ai/config_loader.py at engine startup.
+# Edit this file to tune detection sensitivity without code changes.
+#
+# Severity levels: LOW, MEDIUM, HIGH, CRITICAL
+
+rate_rules:
+  - event_type: EXCP
+    max_count: 5
+    window_sec: 10.0
+    severity: HIGH
+    title: "Exception storm detected"
+
+  - event_type: PROC
+    max_count: 20
+    window_sec: 5.0
+    severity: MEDIUM
+    title: "Rapid process creation (possible fork bomb)"
+
+  - event_type: MOD
+    max_count: 10
+    window_sec: 30.0
+    severity: MEDIUM
+    title: "Module load storm"
+
+  - event_type: FAIL
+    max_count: 3
+    window_sec: 10.0
+    severity: HIGH
+    title: "Repeated failures detected"
+
+  - event_type: DENY
+    max_count: 5
+    window_sec: 10.0
+    severity: MEDIUM
+    title: "Repeated access denials"
+
+pattern_rules:
+  - name: exception-storm
+    sequence: [EXCP, EXCP, EXCP]
+    window_sec: 3.0
+    severity: CRITICAL
+
+  - name: module-crash
+    sequence: [MOD, EXCP]
+    window_sec: 2.0
+    severity: HIGH
+
+  - name: repeated-privilege-fail
+    sequence: [DENY, DENY, DENY]
+    window_sec: 5.0
+    severity: HIGH
+
+  - name: fork-then-crash
+    sequence: [PROC, PROC, EXCP]
+    window_sec: 5.0
+    severity: HIGH
+
+threshold_rules:
+  - metric: proc_count
+    max_val: 32
+    severity: MEDIUM
+    title: "Too many active processes"
+
+  - metric: module_count
+    max_val: 8
+    severity: LOW
+    title: "Too many loaded modules"
+
+  - metric: ipc_queue_len
+    max_val: 100
+    severity: MEDIUM
+    title: "IPC queue backlog"
+
+  - metric: memory_used_pct
+    max_val: 90
+    severity: HIGH
+    title: "Memory usage critical"
